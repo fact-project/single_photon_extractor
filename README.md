@@ -11,3 +11,17 @@ One of Eckart Lorenz last projects was the investigation of something he called 
 
 ### SIPM gain calibration during usual observation
 A single photon extractor __might__ be able to make SIPM gain calibration possible on FACT during usual observation in dark nights using the night sky background.
+
+## First Sandbox
+```bash
+user@machine:~$/single_photon_extractor$ ipython -i sandbox.py 
+substract 1.0 at 61.0ns
+substract 1.0 at 136.5ns
+substract 1.0 at 115.5ns
+substract 1.0 at 91.5ns
+substract 1.0 at 9.0ns
+substract 1.0 at 61.5ns
+total photons found:    6.0
+total photons injected: 7
+```
+![img](examples/substract_pulses.gif)
