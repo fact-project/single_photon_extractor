@@ -15,13 +15,15 @@ A single photon extractor __might__ be able to make SIPM gain calibration possib
 ## First Sandbox
 ```bash
 user@machine:~$/single_photon_extractor$ ipython -i sandbox.py 
-substract 1.0 at 61.0ns
-substract 1.0 at 136.5ns
-substract 1.0 at 115.5ns
-substract 1.0 at 91.5ns
-substract 1.0 at 9.0ns
-substract 1.0 at 61.5ns
-total photons found:    6.0
+substract 1.0 at 31.5ns
+substract 1.0 at 92.0ns
+substract 1.0 at 17.0ns
+substract 1.0 at 32.5ns
+substract 1.0 at 92.0ns
+substract 1.0 at 19.5ns
+substract 1.0 at 63.5ns
+total photons found:    7.0
 total photons injected: 7
+
 ```
 ![img](examples/substract_pulses.gif)
