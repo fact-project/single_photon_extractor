@@ -26,4 +26,4 @@ total photons found:    7.0
 total photons injected: 7
 
 ```
-![img](examples/substract_pulses.gif)
+![img](examples/substraction_of_pulses.gif)
