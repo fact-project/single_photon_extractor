@@ -27,3 +27,14 @@ total photons injected: 7
 
 ```
 ![img](examples/substraction_of_pulses.gif)
+
+## Some links collected so far
+
+https://edux.fit.cvut.cz/oppa/MI-PDD/prednasky/l8-signal-extraction.pdf
+http://stackoverflow.com/questions/11752727/pattern-recognition-in-time-series
+https://cs.uwaterloo.ca/~tozsu/publications/spatial/ssdbm05-ver3.pdf
+https://www.cs.berkeley.edu/~malik/papers/BMP-shape.pdf
+http://www.staff.science.uu.nl/~kreve101/asci/smi2001.pdf
+http://www.comp.nus.edu.sg/~ooibc/SpADe.pdf
+
+
