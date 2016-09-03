@@ -1,0 +1,181 @@
+\documentclass[review]{elsarticle}
+
+\usepackage{lineno,hyperref}
+\usepackage[nolist]{acronym}
+\usepackage[onehalfspacing]{setspace}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{listings}
+\modulolinenumbers[1]
+
+\journal{Astroparticle Physics}
+
+\bibliographystyle{elsarticle-num}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Recursive Single Photon Extraction\\ and Feature Generation on novel Photon Stream\\for Cherenkov Telescopes}
+%
+\author[b]{J.~Adam}
+\author[a]{M.~L.~Ahnen}
+\author[b]{D.~Baack}
+\author[c]{M.~Balbo}
+\author[d]{M.~Bergmann}
+\author[a]{A.~Biland}
+\author[d]{M.~Blank}
+\author[a,1]{T.~Bretz}
+\author[d]{K.~A.~Bruegge}
+\author[b]{J.~Buss\corref{mycorrespondingauthor}}
+\author[c]{A.~Dmytriiev}
+\author[b]{M.~Domke}
+\author[d,2]{D.~Dorner}
+\author[b]{S.~Einecke}
+\author[d]{C.~Hempfling}
+\author[a]{D.~Hildebrand}
+\author[a]{G.~Hughes}
+\author[b]{L.~Linhoff}
+\author[d]{K.~Mannheim}
+\author[a]{S.~A.~Mueller\corref{mycorrespondingauthor}}
+\author[a]{D.~Neise}
+\author[c]{A.~Neronov}
+\author[b]{M.~Noethe}
+\author[d]{A.~Paravac}
+\author[a]{F.~Pauss}
+\author[b]{W.~Rhode}
+\author[a]{A.~Shukla}
+\author[b]{F.~Temme}
+\author[b]{J.~Thaele}
+\author[c]{R.~Walter} 
+%
+\cortext[mycorrespondingauthor]{S. A. Mueller, sebmuell@phys.ethz.ch and J. Buss, jens.buss@tu-dortmund.de}
+%
+\address[a]{ETH Zurich, Institute for Particle Physics\\
+Otto-Stern-Weg 5, 8093 Zurich, Switzerland}
+%
+\address[b]{University of Geneva,  ISDC Data Center for Astrophysics\\
+ Chemin d'Ecogia 16,  1290 Versoix,  Switzerland}
+%
+\address[c]{Universit\"at W\"urzburg, Institute for Theoretical Physics and Astrophysics\\
+Emil-Fischer-Str. 31, 97074 W\"urzburg,  Germany}
+%
+\address[d]{TU Dortmund, Experimental Physics 5\\
+Otto-Hahn-Str. 4, 44221 Dortmund, Germany}
+%
+%------------------------------------------------------------------------------
+\begin{abstract}
+%
+\acfp{iact} record images of extensive air showers to probe the very high energetic gamma ray sky.
+%
+Single photon sensitivity of the image pixels and fast read out electronics further enabled the recording of video sequences.
+%
+Especially for mono observation telescopes, the temporal intensity development of the images became a powerful addition to reconstruct the initial air shower and its primary particle properties.
+%
+However, current reconstruction methods are stuck in the concept of only one single photon amplitude and only one single arrival time on each read out pixel. 
+%
+In this contribution, we present a true, no compromise single photon extraction from the raw sensor responses which we use to define the novel photon stream concept which we will not only show to be the natural data output format for an \acs{iact}, but also opens new ways to improve the air shower reconstruction and to lower the primary particle energy reconstruction threshold.
+%
+\end{abstract}
+%------------------------------------------------------------------------------
+\begin{keyword}
+Single photon detection, silicon photo multiplier, G-APD  
+\end{keyword}
+%------------------------------------------------------------------------------
+\end{frontmatter}
+%\linenumbers
+%------------------------------------------------------------------------------
+\newcommand{\RadioCoeffCresponse}{r_\text{resp}}
+\newcommand{\RadioCoeffTexp}{r_\text{expo}}
+\newcommand{\RadioConstant}{r_\text{const}}
+\newcommand{\NormalizedMirrorResponse}{R}
+\newcommand{\StarIntensity}{s}
+\newcommand{\MirrorReflectionIntensity}{m}
+\newcommand{\RelativePointing}{\Theta}
+\newcommand{\texp}{T_\text{expo}}
+\newcommand{\iflux}{I_\text{pix}}
+\newcommand{\cresponse}{C_\text{pix}}
+\newcommand{\geom}{\alpha}
+\newcommand{\FigCapLabSca}[4]{
+    \begin{figure}[H]
+        \begin{center}
+            \includegraphics[width=#4\textwidth]{#1}
+            \caption[]{#2}
+            \label{#3}
+        \end{center}
+    \end{figure}
+}
+\newcommand{\FigCapLab}[3]{
+    \FigCapLabSca{#1}{#2}{#3}{1.0}
+}
+\newcommand{\TwoFigsSideBySide}[2]{
+    \begin{minipage}[t]{0.485\linewidth}
+        \vspace{-0.5cm}
+        \includegraphics[width=1\textwidth]{#1}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.485\linewidth}
+        \vspace{-0.5cm}
+        \includegraphics[width=1\textwidth]{#2}
+        \vspace{-1cm}
+    \end{minipage}
+}
+\newcommand{\SideBySide}[2]{
+    \newline
+    \begin{minipage}[t]{0.485\linewidth}
+        #1
+        \end{minipage}
+    %
+    \hfill
+    %
+        \begin{minipage}[t]{0.485\linewidth}
+        #2
+    \end{minipage}\\
+}
+%------------------------------------------------------------------------------
+\section{Introduction}
+%
+
+%------------------------------------------------------------------------------
+\section{Current methods}
+\label{secCurrentAlignmentMethods}
+
+%
+%------------------------------------------------------------------------------
+\section{Method and Implementation}
+\label{SecApparatus}
+
+
+%------------------------------------------------------------------------------
+\section{Results}
+\label{SecFactAlignmentResult}
+%
+%------------------------------------------------------------------------------
+\section{Conclusion}
+
+%
+%------------------------------------------------------------------------------
+\section*{Acknowledgments}
+%
+The important contributions from ETH Zurich grants ETH-10.08-2 and ETH-27.12-1 as well as the funding by the German BMBF (Verbundforschung Astro- und Astroteilchenphysik) and HAP (Helmoltz Alliance for Astro- particle Physics) are gratefully acknowledged. 
+%
+We are thankful for the very valuable contributions from E. Lorenz, D. Renker and G. Viertel during the early phase of the project. 
+%
+We thank the Instituto de Astrofisica de Canarias allowing us to operate the telescope at the Observatorio del Roque de los Muchachos in La Palma, the Max-Planck-Institut für Physik for providing us with the mount of the former HEGRA CT3 telescope, and the MAGIC collaboration for their support.
+%
+%------------------------------------------------------------------------------
+\section*{References}
+\bibliography{references.bib}
+%
+%------------------------------------------------------------------------------
+\begin{acronym}
+    \acro{cog}[CoG]{Center of Gravity}
+	\acro{sccan}[SCCAN]{Solar Concentrator Characterization At Night}
+	\acro{psf}[PSF]{Point Spread Function}
+	\acro{fact}[FACT]{First Geiger-mode Avalanche Cherenkov Telescope}
+	\acro{veritas}[VERITAS]{Very Energetic Radiation Imaging Telescope Array System}
+    \acro{iact}[IACT]{Imaging Atmospheric Cherenkov Telescope}
+    \acro{namod}[NAMOD]{Normalized and Asynchronous Mirror Orientation Determination}
+\end{acronym}
+\end{document}
