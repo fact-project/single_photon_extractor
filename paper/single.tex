@@ -158,10 +158,40 @@ This process of image cleaning is very advanced for current \acp{iact} as severa
 
 %
 %------------------------------------------------------------------------------
-\section{Single Photon Extraction Algorithm}
+\section{Single Pulse Extraction Algorithm}
 \label{SecExtractor}
 %
-We extract the arrival times of each photon. 
+Our single pulse extraction algorithm assumes that the pixel amplitude time lines are fully described by the sum of single, indistinguishable pulses which arrived at arbitrary moments.
+%
+We reconstruct the pulse arrival times on a pixel amplitude time line in two steps recursively.
+%
+First, we localize the most likely arrival time of a pulse on the amplitude time line using a template convolution based pattern recognition.
+%
+Second, we subtract a template pulse from the time line at this most likely arrival moment and continue again with localizing the next best most likely pulse.
+%
+The recursive subtraction is stopped when the pixel amplitude time line is flat and no more pulses can be localized.
+%
+\subsection{Input restrictions and freedoms}
+%
+We assume that the pixel amplitude time line inputs are free from read out artifacts, sampled with an equidistant spacing, and have single pulse amplitudes normalized to one.
+%
+We also assume that the amplitude on the time lines is the sum of single, individual pulses produced by the photo electric converter and an omnipresent white noise caused by the analog signal transmission and amplification and the readout electronics.
+%
+Beside from this, the input is not restricted and can especially have floating baselines which do not need to be localized by any means.
+%
+\subsection{Pulse localization}
+%
+We localize the arrival time of a pulse by template based pattern recognition inspired by \cite{Computer_Vision_Book_Forsyth_Ponce}.
+%
+A template pulse amplitude time line is convolved with the input amplitude time line.
+%
+We identify the location of the maximum amplitude on the resulting convolution with the arrival time of the next pulse.
+%
+If the maximum amplitude found on the convolution is larger than $1/2$ single pulse amplitudes, the arrival location is appended the list of arrival times on this pixel time line. Else, the single pulse extraction for this time line is stopped and finished. 
+%
+\subsection{Pulse subtraction}
+%
+When a pulse is localized on the time line, we subtract a template pulse from the input time line just at the location of this latest pulse found. 
 %
 \FigCapLabSca{figures/example.png}{
 	Example photon amplitude time line of a image pixel. 
