@@ -15,6 +15,37 @@ from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from tqdm import tqdm
 
+def write_photon_arrival(path, photon_arrivals):
+    linebreak = np.array([255], dtype=np.uint8)
+
+    f = open(path, "wb")
+    for pixel_arrivals in photon_arrivals:
+        arrivals = np.array(pixel_arrivals, dtype=np.uint8)
+
+        if arrivals.shape[0] > 0:
+            assert arrivals.max() < 254
+            f.write(arrivals.tobytes())
+        f.write(linebreak.tobytes())
+
+    f.close()
+
+def read_photon_arrivals(path):
+    f = open(path, 'rb')
+    raw = f.read()
+    f.close()
+    ars = np.fromstring(raw, dtype=np.uint8)
+
+    pixels = []
+    pixel_arrivals = []
+    for v in ars:
+        if v==255:
+            pixels.append(pixel_arrivals.copy())
+            pixel_arrivals.clear()
+        else:
+            pixel_arrivals.append(v)
+
+    return pixels
+
 class Geometry(object):
     def __init__(self, path):
         pixel_map = np.genfromtxt(path, delimiter=',')[1:]
