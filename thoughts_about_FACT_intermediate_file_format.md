@@ -75,3 +75,19 @@ xml looks like this:
     </process>
 </container>
 ```
+
+----
+
+Call was:
+`time java -jar fact-tools-v0.16.0.jar std_analysis.xml`
+Result was:
+```
+real    10m50.059s
+user    10m15.534s
+sys     0m8.046s
+```
+output file size: 86MB
+
+gzip took 13 seconds --> zipped file size: 30MB
+
+Note: when not doing `PerformanceMeasuringProcess` the thing takes the same time. 
