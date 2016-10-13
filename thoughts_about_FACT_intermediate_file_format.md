@@ -1,85 +1,26 @@
 For a FACT intermediate file format we want to use this single_pulse_extractors output. But not only this
-We want to of course include also some more information, we get basically for free:
+We want to of course include also some more information, we get basically for free.
 
-In order not to forget anything, we work on a list of fact_tools key names:
+So for testing, we are currently doing the std analysis together with the `SinglePulseExtraction` processor on some data. The processing and so on can be found here:
+    isdc:/home/guest/neise/facttools_massive_production/single_photon_extractor
 
-output is here: `isdc-nx00:/home/guest/neise/facttools_massive_production/test`
+An `ls` shows what we've got there:
+    
+    analysis.xml
+    fact-tools-v0.16.0.jar
+    out_dir -> /scratch/fact/single_photon_extractor
+    submit.py
+    workernode.sh
 
-
-xml looks like this:
-```{xml}
-<container>
-
-        <properties url="classpath:/default/settings.properties" />
-
-    <property name="infile" value="file:/fact/raw/2016/10/08/20161008_068.fits.fz" />
-    <property name="drsfile" value="file:/fact/raw/2016/10/08/20161008_064.drs.fits.gz" />
-
-    <property name="integralGainFile" value="classpath:/default/gain_sorted_20131127.csv" />
-    <property name="pixelDelayFile" value="classpath:/default/delays_lightpulser_20150217.csv" />
-
-    <property name="outfile" value="file:./foobar.json" />
-
-    <property name="auxFolder" value="file:/fact/aux/2016/10/08/" />
-    <service id="auxService" class="fact.auxservice.AuxFileService" auxFolder="${auxFolder}" />
-
-    <service id="calibService" class="fact.calibrationservice.ConstantCalibService" />
-
-    <stream id="fact" class="fact.io.zfits.ZFitsStream"  url="${infile}"/>
-
-    <process class="fact.PerformanceMeasuringProcess" url="file:./measured_runtime.json" id="1" input="fact" warmupIterations="1">
-        <!-- prevEventAndSkip: -->
-        <!-- PreviousEventInfo, Skip(no Data Trigger) -->
-        <include url="classpath:/default/data/prevEventAndSkip.xml" />
-        <!-- Output: Data -->
-
-        <!-- Calibration: -->
-        <!-- DrsCalibration, PatchJumpRemoval, RemoveSpikes,
-        DrsTimeCalibration, ArrayTimeCorrection, InterpolateBadPixel -->
-        <include url="classpath:/default/data/calibration.xml" />
-        <!-- Output: DataCalibrated -->
-
-        <fact.extraction.SinglePulseExtraction 
-            dataKey="DataCalibrated"
-            outputKey="PhotonArrivals"
-            maxIterations="1000"
-        />
-        <!-- Extraction -->
-        <!-- BasicExtraction, RisingEdgeForPositions, RisingEdgePolynomFit, TimeOverThreshold,
-        PhotonChargeTimeOverThreshold, HandleSaturation, CorrectPixelDelays-->
-        <include url="classpath:/default/data/extraction.xml" />
-        <!-- Output: photoncharge, arrivalTime -->
-
-        <!-- Cleaning -->
-        <!-- SourcePosition(Cetatauri), CoreNeighborCleanTimeNeighbor-->
-        <include url="classpath:/default/data/cleaning.xml" />
-        <!-- Output: shower -->
-
-        <!-- Parameter calculation (only source independent) -->
-        <!-- ArrayMean(photoncharge,arrivalTime), ArrayStatistics(photoncharge,arrivalTime,maxSlopes,
-        arrivalTimePos,maxSlopesPos,maxAmplitudePosition,photonchargeSaturated,arrivalTimeTOT),
-        Size, DistributionFromShower, M3Long, Length, Width, NumberOfIslands, TimeGraident,
-        Concentration, ConcentrationCore, ConcentrationAtCenterOfGravity, Leakage, TimeSpread,
-        ShowerSlope, Disp -->
-        <include url="classpath:/default/data/parameterCalc.xml" />
-        <!-- Output: source independent parameters -->
-
-        <!-- Parameter calculation (only source dependent) -->
-        <!-- SourcePosition(${sourcename}), AntiSourcePosition(5), Alpha(for 6 Sources),
-        Distance(for 6 Sources), CosDeltaAlpha(for 6 Sources), Theta(for 6 Sources) -->
-        <include url="classpath:/default/data/sourceParameter.xml" />
-        <!-- Output: source dependent parameters -->
-
-
-        <fact.io.JSONWriter url="${outfile}" keys="${keysForOutput},PhotonArrivals" />
-    </process>
-</container>
-```
+There are a few more files, but they are not important. 
+So everybody can see the `analysis.xml` and as you see, we use fact-tools v0.16.0, no development version.
+`workernode.sh` is just doing the `java -jar <jarfile> <xmlfile>` call, nothing more.
+`submit.py` is walking through an input folder, finding all the data run, finding the right drs-file for them, and doing the `qsub`. 
 
 ----
+## Testrun
 
-Call was:
-`time java -jar fact-tools-v0.16.0.jar std_analysis.xml`
+We did a testrun `time java -jar fact-tools-v0.16.0.jar analysis.xml`
 Result was:
 ```
 real    10m50.059s
@@ -87,7 +28,7 @@ user    10m15.534s
 sys     0m8.046s
 ```
 output file size: 86MB
-
 gzip took 13 seconds --> zipped file size: 30MB
 
 Note: when not doing `PerformanceMeasuringProcess` the thing takes the same time. 
+Note: now we use `gzip="true"` for the JSONWriter in the xml directly.
