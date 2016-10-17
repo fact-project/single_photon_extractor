@@ -32,3 +32,29 @@ gzip took 13 seconds --> zipped file size: 30MB
 
 Note: when not doing `PerformanceMeasuringProcess` the thing takes the same time. 
 Note: now we use `gzip="true"` for the JSONWriter in the xml directly.
+
+-----
+
+## Results of test run over 4month: (01-04.2014)
+
+438 out of 5065 runs wrote this into their stderr file:
+```
+java.lang.StringIndexOutOfBoundsException: String index out of range: -1
+        at java.lang.String.substring(String.java:1911)
+        at fact.auxservice.AuxFileService$1.accept(AuxFileService.java:135)
+        at java.io.File.list(File.java:1087)
+        at fact.auxservice.AuxFileService.findAuxFileUrls(AuxFileService.java:128)
+        at fact.auxservice.AuxFileService.getAuxiliaryData(AuxFileService.java:62)
+        at fact.features.source.SourcePosition.process(SourcePosition.java:211)
+        at stream.runtime.AbstractProcess.process(AbstractProcess.java:126)
+        at stream.runtime.AbstractProcess.execute(AbstractProcess.java:184)
+        at stream.runtime.ProcessThread.run(ProcessThread.java:123)
+```
+
+This is independent of the use of the `SinglePulseExtractor` processor.
+Not all of the json files, which belong to a `StringIndexOutOfBoundsException`-stderr file are `[]` empty lists.
+All json files I've seen, also those with the exception, are valid json files.
+
+The entire test for 4 month took a day, that's pretty fast, I think.
+
+So even those, which show problems ... can be further analyzed.
