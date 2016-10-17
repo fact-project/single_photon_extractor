@@ -53,8 +53,8 @@ java.lang.StringIndexOutOfBoundsException: String index out of range: -1
 
 This is independent of the use of the `SinglePulseExtractor` processor.
 Not all of the json files, which belong to a `StringIndexOutOfBoundsException`-stderr file are `[]` empty lists.
-All json files I've seen, also those with the exception, are valid json files.
+All json files I've seen, also those with the exception, are valid json files. So even those, which show problems ... can be further analyzed.
 
-The entire test for 4 month took a day, that's pretty fast, I think.
+The entire test for 4 month took a day, that's pretty fast, I think. The entire size of the 4month json output folder is 136GB. So if these 4 months are representative 5 years of data would end up as 2TB not 10TB.
 
-So even those, which show problems ... can be further analyzed.
+I start now the rest of 2014.
