@@ -57,4 +57,7 @@ All json files I've seen, also those with the exception, are valid json files. S
 
 The entire test for 4 month took a day, that's pretty fast, I think. The entire size of the 4month json output folder is 136GB. So if these 4 months are representative 5 years of data would end up as 2TB not 10TB.
 
-I start now the rest of 2014.
+I start now the rest of 2014. Now is 17.10.2016 ~10:10h. (submission of 8 month of jobs, takes roughly 10minutes)
+The number of total jobs submitted is a little less than 17k.
+
+At the moment we get 117 workernodes at ISDC, which at an estimated job runtime of 15minutes gives us 11k jobs per day. So 2014 should be done by tomorrow evening.
