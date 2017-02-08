@@ -42,4 +42,6 @@ http://www.staff.science.uu.nl/~kreve101/asci/smi2001.pdf
 
 http://www.comp.nus.edu.sg/~ooibc/SpADe.pdf
 
+https://arxiv.org/abs/0907.2610v3
+
 
