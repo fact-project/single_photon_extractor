@@ -346,8 +346,8 @@ for s, windowRadius in enumerate(windowRadii):
     trueFindings[s] = bench.truePositiveRate()
     falseFindings[s] = bench.falseNegativeRate()
 
-plt.step(windowRadii/2, falseFindings, color='g', linewidth=5.0, label='false negative (Miss Rate)')
-plt.step(windowRadii/2, trueFindings, color='b', linewidth=5.0, label='true positive (Sensitivity)')
+plt.step(windowRadii/2, falseFindings, color='g', linewidth=5.0, label='false negative rate (Miss Rate)')
+plt.step(windowRadii/2, trueFindings, color='b', linewidth=5.0, label='true positive rate (Sensitivity)')
 plt.ylabel('rate [1]')
 plt.xlabel('matching window radius [ns]')
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
