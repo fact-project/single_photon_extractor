@@ -162,8 +162,8 @@ def plot_timeline_with_mc_truth(f_sample, s_vs_t_and_mc):
 
     ax1 = plt.subplot(4,1,1)
     ax1.step(times, s_vs_t)
-    ax1.set_xlabel('t[ns]')
-    ax1.set_ylabel('A[1]')
+    ax1.set_xlabel('t/ns')
+    ax1.set_ylabel('A/1')
 
     ax2 = plt.subplot(4,1,2, sharex=ax1)
     for s in mc['pulse_injection_slices']:
@@ -171,11 +171,11 @@ def plot_timeline_with_mc_truth(f_sample, s_vs_t_and_mc):
             continue
         ax2.plot([times[s], times[s]],[0, 1], 'r')
 
-    ax2.set_xlabel('t[ns]')
-    ax2.set_ylabel('MC truth')
+    ax2.set_xlabel('t/ns')
+    ax2.set_ylabel('truth')
 
     ax3 = plt.subplot(4,1,3)
-    ax3.set_xlabel('t[ns]')
+    ax3.set_xlabel('t/ns')
     ax3.set_ylabel('convolve')
     sipm = sipm_vs_t(f_sample, 20, 0.0)
     fcp = np.convolve(s_vs_t, sipm, mode='same')/sum(sipm)
@@ -184,8 +184,8 @@ def plot_timeline_with_mc_truth(f_sample, s_vs_t_and_mc):
     ax4 = plt.subplot(4,1,4)
     frec, spec = power_spectrum(s_vs_t, f_sample)
     ax4.step(frec, spec)
-    ax4.set_xlabel('f[Hz]')
-    ax4.set_ylabel('I[1]')
+    ax4.set_xlabel('f/Hz')
+    ax4.set_ylabel('I/1')
     ax4.set_xscale('log')
 
     plt.show()
@@ -195,43 +195,29 @@ def extraction(sig_vs_t, puls_template, subs_pulse_template, return_intermediate
     ri = return_intermediate_sig_vs_t
     intermediate_sig_vs_t = []
 
-
     sig_vs_t_copy = sig_vs_t.copy()
-
     arrivalSlices = []
-
     puls_template_integral = sum(puls_template)
 
     while True:
-        # convolve timeline with pulse template
-        sig_conv_sipm = np.convolve(sig_vs_t_copy, puls_template, mode='valid')/puls_template_integral
+        sig_conv_sipm = np.convolve(
+            sig_vs_t_copy, 
+            puls_template, 
+            mode='valid'
+        )/puls_template_integral
 
-        # find slice with max response
-        offset_slices = 5   # Seems to be needed (at least it helps) because of 
-                            # the asymetric nature of the pluse template
+        offset_slices = 5
         max_slice = int(np.round(np.argmax(sig_conv_sipm) - offset_slices))
         max_response = np.max(sig_conv_sipm)
 
         if max_response >= 0.45:
-            # substract this pulse
-            weight = 1.0 # Maybe even substracting more than one photon? 
-                         # e.g.: max_photon_equivalent = np.round(max_response)
             
-            #print('substract '+str(weight)+' at '+str(np.round(max_slice*cfg['T_sample']*1e9,1))+'ns')
-            #plot_timeline_with_mc_truth(cfg['f_sample'], [sig_vs_t_copy, mc_truth])
             if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
 
-            # substract pulse
             add_first_to_second_at(subs_pulse_template, sig_vs_t_copy, [max_slice])
-
-            # again apply the ac coupling to avoid drift of baseline
-            # the new substracted timeline is now again a valid FACT ac coupled timeline
             approximate_ac_coupling(sig_vs_t_copy)  
-            
-            # store the result
             arrivalSlices.append(max_slice)
         else:
-            #plot_timeline_with_mc_truth(cfg['f_sample'], [sig_vs_t_copy, mc_truth])
             if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
             break
 

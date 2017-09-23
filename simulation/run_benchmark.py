@@ -90,7 +90,7 @@ for s, windowRadius in enumerate(windowRadii):
 
 plt.step(windowRadii/2, falseFindings, color='g', linewidth=5.0, label='false negative rate (Miss Rate)')
 plt.step(windowRadii/2, trueFindings, color='b', linewidth=5.0, label='true positive rate (Sensitivity)')
-plt.ylabel('rate [1]')
-plt.xlabel('matching window radius [ns]')
+plt.ylabel('rate/1')
+plt.xlabel('matching window radius/ns')
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=2, mode="expand", borderaxespad=0.)
