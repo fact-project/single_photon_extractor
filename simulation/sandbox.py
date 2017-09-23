@@ -199,6 +199,9 @@ def extraction(sig_vs_t, puls_template, subs_pulse_template, return_intermediate
     arrivalSlices = []
     puls_template_integral = sum(puls_template)
 
+    if ri: 
+        intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
+
     while True:
         sig_conv_sipm = np.convolve(
             sig_vs_t_copy, 
@@ -211,18 +214,18 @@ def extraction(sig_vs_t, puls_template, subs_pulse_template, return_intermediate
         max_response = np.max(sig_conv_sipm)
 
         if max_response >= 0.45:
-            
-            if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
 
             add_first_to_second_at(subs_pulse_template, sig_vs_t_copy, [max_slice])
-            approximate_ac_coupling(sig_vs_t_copy)  
-            arrivalSlices.append(max_slice)
+            approximate_ac_coupling(sig_vs_t_copy)
+
+            if max_slice > 0:
+                arrivalSlices.append(max_slice)
+                if ri: 
+                    intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
         else:
-            if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
             break
 
     arrivalSlices = np.array(arrivalSlices)
-    arrivalSlices = arrivalSlices[arrivalSlices > 0]
     if ri:
         return arrivalSlices, intermediate_sig_vs_t
     else:
