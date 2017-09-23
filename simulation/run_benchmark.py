@@ -14,6 +14,38 @@ class Bench(object):
     def falseNegativeRate(self):
         return self.falsePositive/(self.truePositive + self.falseNegative)
 
+    def delta_truePositiveRate(self):
+        tp = self.truePositive
+        fn = self.falseNegative
+
+        D_tp = np.sqrt(tp)
+        D_fn = np.sqrt(fn)
+
+        dS_dtp = fn/(tp + fn)**2
+        dS_dfn =-tp/(tp + fn)**2
+        return np.sqrt(
+            (dS_dtp**2)*(D_tp**2) + 
+            (dS_dfn**2)*(D_fn**2)
+        )
+
+    def delta_falseNegativeRate(self):
+        fp = self.falsePositive
+        tp = self.truePositive
+        fn = self.falseNegative
+
+        D_fp = np.sqrt(fp)
+        D_tp = np.sqrt(tp)
+        D_fn = np.sqrt(fn)
+
+        dM_dfp = 1/(tp + fn)
+        dM_dtp = -fp/(tp+fn)**2
+        dM_dfn = -fp/(tp+fn)**2
+        return np.sqrt(
+            (dM_dfp**2)*(D_fp**2) + 
+            (dM_dtp**2)*(D_tp**2) + 
+            (dM_dfn**2)*(D_fn**2)
+        )
+
     def __str__(self):
         out=''
         out+='correct positive rate '+str(self.truePositiveRate())
@@ -40,7 +72,7 @@ def benchmark(arrivalsExtracted, arrivalsTruth, windowRadius=10):
         else:
             match = find_nearest(arrivalsExtractedRemaining, arrivalTruth)
             distance = np.abs(arrivalsExtractedRemaining[match] - arrivalTruth)
-            if distance < windowRadius:
+            if distance <= windowRadius:
                 arrivalsExtractedRemaining = np.delete(arrivalsExtractedRemaining, match) 
                 bench.truePositive += 1
             else:
@@ -53,13 +85,15 @@ def benchmark(arrivalsExtracted, arrivalsTruth, windowRadius=10):
 #-------------------------------------------------------------------------------
 maxWindowRadius = 10
 windowRadii = np.linspace(0,maxWindowRadius,maxWindowRadius, endpoint=False)
-trueFindings = np.zeros(maxWindowRadius)
-falseFindings = np.zeros(maxWindowRadius)
+truePositiveRate = np.zeros(maxWindowRadius)
+falseNegativeRate = np.zeros(maxWindowRadius)
+delta_truePositiveRate = np.zeros(maxWindowRadius)
+delta_falseNegativeRate = np.zeros(maxWindowRadius)
 
 for s, windowRadius in enumerate(windowRadii):
     
     bench = Bench()
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(1440)):
         sig_vs_t , mc_truth = fact_sig_vs_t(cfg)
 
         arrivalSlicesTruth = mc_truth['pulse_injection_slices'][mc_truth['pulse_injection_slices']>=0]
@@ -85,12 +119,44 @@ for s, windowRadius in enumerate(windowRadii):
         bench.falsePositive += b.falsePositive
         bench.falseNegative += b.falseNegative
 
-    trueFindings[s] = bench.truePositiveRate()
-    falseFindings[s] = bench.falseNegativeRate()
+    truePositiveRate[s] = bench.truePositiveRate()
+    delta_truePositiveRate[s] = bench.delta_truePositiveRate()
 
-plt.step(windowRadii/2, falseFindings, color='g', linewidth=5.0, label='false negative rate (Miss Rate)')
-plt.step(windowRadii/2, trueFindings, color='b', linewidth=5.0, label='true positive rate (Sensitivity)')
+    falseNegativeRate[s] = bench.falseNegativeRate()
+    delta_falseNegativeRate[s] = bench.delta_falseNegativeRate()
+
+
+
+plt.figure(figsize=(8,2*3.43))
+plt.errorbar(
+    windowRadii/2+.25, 
+    truePositiveRate, 
+    xerr=0.25, 
+    yerr=delta_truePositiveRate, 
+    fmt=',', 
+    color='C0',
+    label='True positive rate'
+)
+plt.errorbar(
+    windowRadii/2+.25, 
+    falseNegativeRate, 
+    xerr=0.25, 
+    yerr=delta_falseNegativeRate, 
+    fmt=',', 
+    color='C1',
+    label='False negative rate'
+)
 plt.ylabel('rate/1')
-plt.xlabel('matching window radius/ns')
-plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-           ncol=2, mode="expand", borderaxespad=0.)
+plt.xlabel('time coincidence radius/ns')
+plt.legend(
+    bbox_to_anchor=(0., 1.02, 1., .102), 
+    loc=3,
+    ncol=2, 
+    mode="expand", borderaxespad=0.
+)
+plt.savefig(
+    'benchmark.png', 
+    dpi=256, 
+    bbox_inches='tight', 
+    pad_inches=0
+)
