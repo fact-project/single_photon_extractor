@@ -3,28 +3,9 @@ from __future__ import absolute_import, print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
-import random
 from tqdm import tqdm
 import matplotlib.patches as mpatches
-#-------------------------------------------------------------------------------
-class Bench(object):
-    def __init__(self):
-        self.truePositive = 0
-        self.falsePositive = 0
-        self.trueNegative = 0
-        self.falseNegative = 0
 
-    def truePositiveRate(self):
-        return self.truePositive/(self.truePositive + self.falseNegative)
-
-    def falseNegativeRate(self):
-        return self.falsePositive/(self.truePositive + self.falseNegative)
-
-    def __str__(self):
-        out=''
-        out+='correct positive rate '+str(self.truePositiveRate())
-        out+='false negative rate '+str(self.falseNegativeRate())
-        return out
 #-------------------------------------------------------------------------------
 def time_slices(f_sample, N):
     """
@@ -145,7 +126,7 @@ def poisson_arrival_times(exposure_time, f):
     arrival_times = []
     time = 0
     while time < exposure_time:
-        time_until_next_arrival = random.expovariate(f)
+        time_until_next_arrival = -np.log(np.random.uniform())/f
         time += time_until_next_arrival
         if time < exposure_time:
             arrival_times.append(time)
@@ -210,7 +191,11 @@ def plot_timeline_with_mc_truth(f_sample, s_vs_t_and_mc):
     plt.show()
 
 #-------------------------------------------------------------------------------
-def extraction(sig_vs_t, puls_template, subs_pulse_template):
+def extraction(sig_vs_t, puls_template, subs_pulse_template, return_intermediate_sig_vs_t=False):
+    ri = return_intermediate_sig_vs_t
+    intermediate_sig_vs_t = []
+
+
     sig_vs_t_copy = sig_vs_t.copy()
 
     arrivalSlices = []
@@ -234,7 +219,8 @@ def extraction(sig_vs_t, puls_template, subs_pulse_template):
             
             #print('substract '+str(weight)+' at '+str(np.round(max_slice*cfg['T_sample']*1e9,1))+'ns')
             #plot_timeline_with_mc_truth(cfg['f_sample'], [sig_vs_t_copy, mc_truth])
-            
+            if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
+
             # substract pulse
             add_first_to_second_at(subs_pulse_template, sig_vs_t_copy, [max_slice])
 
@@ -246,40 +232,16 @@ def extraction(sig_vs_t, puls_template, subs_pulse_template):
             arrivalSlices.append(max_slice)
         else:
             #plot_timeline_with_mc_truth(cfg['f_sample'], [sig_vs_t_copy, mc_truth])
+            if ri: intermediate_sig_vs_t.append(sig_vs_t_copy.copy())
             break
 
     arrivalSlices = np.array(arrivalSlices)
     arrivalSlices = arrivalSlices[arrivalSlices > 0]
-    return arrivalSlices
+    if ri:
+        return arrivalSlices, intermediate_sig_vs_t
+    else:
+        return arrivalSlices
 
-def benchmark(arrivalsExtracted, arrivalsTruth, windowRadius=10):
-
-    arrivalsExtracted = np.sort(arrivalsExtracted)
-    arrivalsTruth = np.sort(arrivalsTruth)
-
-    def find_nearest(array, value):
-        return (np.abs(array-value)).argmin()
-
-    bench = Bench()
-
-    arrivalsExtractedRemaining = arrivalsExtracted.copy()
-
-    for arrivalTruth in arrivalsTruth:
-
-        if arrivalsExtractedRemaining.shape[0] == 0:
-            bench.falseNegative += 1
-        else:
-            match = find_nearest(arrivalsExtractedRemaining, arrivalTruth)
-            distance = np.abs(arrivalsExtractedRemaining[match] - arrivalTruth)
-            if distance < windowRadius:
-                arrivalsExtractedRemaining = np.delete(arrivalsExtractedRemaining, match) 
-                bench.truePositive += 1
-            else:
-                bench.falseNegative += 1
-
-    bench.falsePositive += arrivalsExtractedRemaining.shape[0]
-
-    return bench
 
 #-------------------------------------------------------------------------------
 # 
@@ -292,7 +254,7 @@ cfg['f_sample'] = 2e9
 cfg['roi_N'] = 300 #roi: region of interest
 cfg['psc_overhead'] = 3 #psc: pseudo continuos timeline
 cfg['f_photons'] = 5e7 # average arrival frequency of photons (poisson distributed)
-cfg['std_dev_el_noise'] = 0.0 # electronic noise amplitude in std dev of pulse hights 
+cfg['std_dev_el_noise'] = 0.1 # electronic noise amplitude in std dev of pulse hights 
 
 cfg['T_sample'] = 1.0/cfg['f_sample'] 
 cfg['roi_start'] = cfg['psc_overhead']*cfg['roi_N']
@@ -308,47 +270,3 @@ puls_template = sipm_vs_t(cfg['f_sample'], N=20, t_offset=0.0)
 # 3) SUBSTRACTION PULS TEMPLATE
 # -----------------------------
 subs_pulse_template = -1.0*sipm_vs_t(cfg['f_sample'], N=300, t_offset=0.0)
-
-maxWindowRadius = 10
-windowRadii = np.linspace(0,maxWindowRadius,maxWindowRadius, endpoint=False)
-trueFindings = np.zeros(maxWindowRadius)
-falseFindings = np.zeros(maxWindowRadius)
-
-for s, windowRadius in enumerate(windowRadii):
-    
-    bench = Bench()
-    for i in tqdm(range(5000)):
-        sig_vs_t , mc_truth = fact_sig_vs_t(cfg)
-
-        arrivalSlicesTruth = mc_truth['pulse_injection_slices'][mc_truth['pulse_injection_slices']>=0]
-        arrivalSlices = extraction(sig_vs_t, puls_template, subs_pulse_template)
-
-        arrivalSlices = np.sort(arrivalSlices)
-        arrivalSlicesTruth = np.sort(arrivalSlicesTruth)
-
-        arrivalSlices += 2
-
-        arrivalSlices=arrivalSlices[arrivalSlices>25]
-        arrivalSlices=arrivalSlices[arrivalSlices<275]
-
-        arrivalSlicesTruth=arrivalSlicesTruth[arrivalSlicesTruth>25]
-        arrivalSlicesTruth=arrivalSlicesTruth[arrivalSlicesTruth<275]
-
-        b = benchmark(
-            arrivalSlices,
-            arrivalSlicesTruth, 
-            windowRadius=windowRadius)
-
-        bench.truePositive += b.truePositive
-        bench.falsePositive += b.falsePositive
-        bench.falseNegative += b.falseNegative
-
-    trueFindings[s] = bench.truePositiveRate()
-    falseFindings[s] = bench.falseNegativeRate()
-
-plt.step(windowRadii/2, falseFindings, color='g', linewidth=5.0, label='false negative rate (Miss Rate)')
-plt.step(windowRadii/2, trueFindings, color='b', linewidth=5.0, label='true positive rate (Sensitivity)')
-plt.ylabel('rate [1]')
-plt.xlabel('matching window radius [ns]')
-plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-           ncol=2, mode="expand", borderaxespad=0.)
