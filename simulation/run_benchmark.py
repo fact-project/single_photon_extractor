@@ -129,7 +129,7 @@ for s, windowRadius in enumerate(windowRadii):
 
 plt.figure(figsize=(8,2*3.43))
 plt.errorbar(
-    windowRadii/2+.25, 
+    windowRadii/2, 
     truePositiveRate, 
     xerr=0.25, 
     yerr=delta_truePositiveRate, 
@@ -138,7 +138,7 @@ plt.errorbar(
     label='True positive rate'
 )
 plt.errorbar(
-    windowRadii/2+.25, 
+    windowRadii/2, 
     falseNegativeRate, 
     xerr=0.25, 
     yerr=delta_falseNegativeRate, 
