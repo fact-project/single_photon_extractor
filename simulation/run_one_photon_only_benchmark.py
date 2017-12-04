@@ -50,18 +50,18 @@ for noise_amplitude in np.array([0.0, 0.1, 0.2]):
     residual_times = np.array(residual_times)
     residual_times *= 1e9 # in ns
 
-    with open('one_benchmark.txt', 'at') as fout:
-        fout.write('noise_amplitude')
+    with open('one_benchmark.jsonl', 'at') as fout:
+        fout.write('{noise_amplitude: ')
         fout.write(str(noise_amplitude))
         fout.write(', ')
 
-        fout.write('mean')
+        fout.write('mean: ')
         fout.write(str(np.mean(residual_times)))
         fout.write(', ')
 
-        fout.write('std')
+        fout.write('std: ')
         fout.write(str(np.std(residual_times)))
-        fout.write('\n')
+        fout.write('}\n')
 
     counts, bin_edges = np.histogram(
         residual_times,
