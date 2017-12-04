@@ -24,7 +24,7 @@ class Bench(object):
         dS_dtp = fn/(tp + fn)**2
         dS_dfn =-tp/(tp + fn)**2
         return np.sqrt(
-            (dS_dtp**2)*(D_tp**2) + 
+            (dS_dtp**2)*(D_tp**2) +
             (dS_dfn**2)*(D_fn**2)
         )
 
@@ -41,8 +41,8 @@ class Bench(object):
         dM_dtp = -fp/(tp+fn)**2
         dM_dfn = -fp/(tp+fn)**2
         return np.sqrt(
-            (dM_dfp**2)*(D_fp**2) + 
-            (dM_dtp**2)*(D_tp**2) + 
+            (dM_dfp**2)*(D_fp**2) +
+            (dM_dtp**2)*(D_tp**2) +
             (dM_dfn**2)*(D_fn**2)
         )
 
@@ -73,7 +73,7 @@ def benchmark(arrivalsExtracted, arrivalsTruth, windowRadius=10):
             match = find_nearest(arrivalsExtractedRemaining, arrivalTruth)
             distance = np.abs(arrivalsExtractedRemaining[match] - arrivalTruth)
             if distance <= windowRadius:
-                arrivalsExtractedRemaining = np.delete(arrivalsExtractedRemaining, match) 
+                arrivalsExtractedRemaining = np.delete(arrivalsExtractedRemaining, match)
                 bench.truePositive += 1
             else:
                 bench.falseNegative += 1
@@ -91,7 +91,7 @@ delta_truePositiveRate = np.zeros(maxWindowRadius)
 delta_falseNegativeRate = np.zeros(maxWindowRadius)
 
 for s, windowRadius in enumerate(windowRadii):
-    
+
     bench = Bench()
     for i in tqdm(range(1440)):
         sig_vs_t , mc_truth = fact_sig_vs_t(cfg)
@@ -112,7 +112,7 @@ for s, windowRadius in enumerate(windowRadii):
 
         b = benchmark(
             arrivalSlices,
-            arrivalSlicesTruth, 
+            arrivalSlicesTruth,
             windowRadius=windowRadius)
 
         bench.truePositive += b.truePositive
@@ -129,34 +129,34 @@ for s, windowRadius in enumerate(windowRadii):
 
 plt.figure(figsize=(8,2*3.43))
 plt.errorbar(
-    windowRadii/2, 
-    truePositiveRate, 
-    xerr=0.25, 
-    yerr=delta_truePositiveRate, 
-    fmt=',', 
+    windowRadii/2,
+    truePositiveRate,
+    xerr=0.25,
+    yerr=delta_truePositiveRate,
+    fmt=',',
     color='C0',
     label='True positive rate'
 )
 plt.errorbar(
-    windowRadii/2, 
-    falseNegativeRate, 
-    xerr=0.25, 
-    yerr=delta_falseNegativeRate, 
-    fmt=',', 
+    windowRadii/2,
+    falseNegativeRate,
+    xerr=0.25,
+    yerr=delta_falseNegativeRate,
+    fmt=',',
     color='C1',
     label='False negative rate'
 )
 plt.ylabel('rate/1')
 plt.xlabel('time coincidence radius/ns')
 plt.legend(
-    bbox_to_anchor=(0., 1.02, 1., .102), 
+    bbox_to_anchor=(0., 1.02, 1., .102),
     loc=3,
-    ncol=2, 
+    ncol=2,
     mode="expand", borderaxespad=0.
 )
 plt.savefig(
-    'benchmark.png', 
-    dpi=256, 
-    bbox_inches='tight', 
+    'benchmark.png',
+    dpi=256,
+    bbox_inches='tight',
     pad_inches=0
 )
