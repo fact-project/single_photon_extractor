@@ -18,10 +18,13 @@ for seed in [2,4,5,8,13,30,33,35,46]:
 
     assert N > 0
     assert N == len(arrival_slices) + 1
-    plt.figure(figsize=(8,N*3.43/3))
 
     mi = np.min([np.min(A) for A in intermediate_sig_vs_t])
     ma = np.max([np.max(A) for A in intermediate_sig_vs_t])
+
+    # Combined figure
+    # ---------------
+    plt.figure(figsize=(8,N*3.43/3))
 
     for n in range(N):
         if n > 0: 
@@ -47,3 +50,29 @@ for seed in [2,4,5,8,13,30,33,35,46]:
         bbox_inches='tight', 
         pad_inches=0
     )
+
+    # Separate figures
+    # ----------------
+
+    for n in range(N):
+        plt.figure(figsize=(8,3.43/3))
+        ax = plt.gca()
+        times = 1e9*time_slices(cfg['f_sample'], intermediate_sig_vs_t[n].shape[0])
+        ax.step(times, intermediate_sig_vs_t[n])
+
+        for true_arrival in true_arrivals:
+            ax.plot([true_arrival/2, true_arrival/2],[mi, ma],'g', alpha=0.3)
+
+        if n < N-1: 
+            ax.plot([arrival_slices[n]/2, arrival_slices[n]/2],[mi, ma],'r')
+
+        ax.set_ylim([mi,ma])
+        ax.set_xlabel('t/ns')
+        ax.set_ylabel('A/1')
+
+        plt.savefig(
+            'example_extraction_seed_'+str(seed)+'_'+str(n)+'.png', 
+            dpi=256, 
+            bbox_inches='tight', 
+            pad_inches=0
+        )
