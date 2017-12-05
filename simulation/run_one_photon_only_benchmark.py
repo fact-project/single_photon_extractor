@@ -1,24 +1,32 @@
 from sandbox import *
+import json
 
-SEED = 0
+np.random.seed = 0
 ROI = 300
 F_SAMPLE = 2e9
 SLICE_DURATION = 1/F_SAMPLE
 INJECTION_SLICE = 100
 
-bins = np.linspace(-3, 2, 153)
+n_thrown = int(1e5)
 
-plt.figure(figsize=(8,2*3.43))
+noises = [
+    {'noise_amplitude': 0.0, 'color': 'lightgrey', 'linestyle': '-'},
+    {'noise_amplitude': 0.05, 'color': 'lightgrey', 'linestyle': ':'},
+    {'noise_amplitude': 0.2, 'color': 'lightgrey', 'linestyle': '--'},
+    {'noise_amplitude': 0.1, 'color': 'k', 'linestyle': '-'},
+]
 
-for noise_amplitude in np.array([0.0, 0.1, 0.2]):
+for n in noises:
 
-    n_thrown = int(1e5)
     n_detected = 0
     residual_times = []
 
-    for sub_offset in np.random.uniform(low=0.0, high=SLICE_DURATION, size=n_thrown):
+    for sub_offset in np.random.uniform(
+        low=0.0,
+        high=SLICE_DURATION,
+        size=n_thrown
+    ):
         true_arrival_time = INJECTION_SLICE/F_SAMPLE + sub_offset
-
 
         one_gapd_pulse = sipm_vs_t(
             F_SAMPLE,
@@ -27,10 +35,10 @@ for noise_amplitude in np.array([0.0, 0.1, 0.2]):
         )
 
         time_series = np.zeros(ROI)
-        electronics_noise = white_noise(ROI, noise_amplitude)
+        electronics_noise = white_noise(ROI, n['noise_amplitude'])
+
         add_first_to_second_at(one_gapd_pulse, time_series, [INJECTION_SLICE])
         add_first_to_second_at(electronics_noise, time_series, [0])
-
 
         extracted_arrival_slice = extraction(
             sig_vs_t=time_series,
@@ -47,38 +55,41 @@ for noise_amplitude in np.array([0.0, 0.1, 0.2]):
                 true_arrival_time - extracted_arrival_time
             )
 
-    residual_times = np.array(residual_times)
-    residual_times *= 1e9 # in ns
+    n['n_thrown'] = n_thrown
+    n['n_detected'] = n_detected
+    n['residual_times'] = residual_times
+    n['mean'] = np.mean(np.array(residual_times))
+    n['std'] = np.std(np.array(residual_times))
 
-    with open('one_benchmark.jsonl', 'at') as fout:
-        fout.write('{noise_amplitude: ')
-        fout.write(str(noise_amplitude))
-        fout.write(', ')
+with open('one_benchmark.jsonl', 'wt') as fout:
+    for n in noises:
+        fout.write(json.dumps(n))
+        fout.write('\n')
 
-        fout.write('mean: ')
-        fout.write(str(np.mean(residual_times)))
-        fout.write(', ')
 
-        fout.write('std: ')
-        fout.write(str(np.std(residual_times)))
-        fout.write('}\n')
+bin_edges = np.linspace(-3, 2, 200)
+plt.figure(figsize=(8, 2*3.43))
 
+for n in noises:
+
+    residual_times_ns = np.array(n['residual_times'])*1e9
     counts, bin_edges = np.histogram(
-        residual_times,
-        bins=bins
+        residual_times_ns,
+        bins=bin_edges
     )
 
-    counts = counts*(n_detected/n_thrown)/counts.sum()
+    normalized_counts = counts*(n['n_detected']/n['n_thrown'])/counts.sum()
 
     plt.step(
         bin_edges[:-1],
-        counts,
-        #color='C0',
-        label=str(noise_amplitude),
+        normalized_counts,
+        color=n['color'],
+        label=str(n['noise_amplitude']),
+        linestyle=n['linestyle']
     )
 
 plt.ylabel('rate/1')
-plt.xlabel('true minus extracted arrival time/ns')
+plt.xlabel('true arrival time - extracted arrival time/ns')
 plt.legend(
     bbox_to_anchor=(0., 1.02, 1., .102),
     loc=3,
