@@ -47,8 +47,8 @@ for n in noises:
             return_intermediate_sig_vs_t=False
         )
 
+        n_detected += len(extracted_arrival_slice)
         if len(extracted_arrival_slice) > 0:
-            n_detected += 1
             arrival_slice = extracted_arrival_slice[0]
             extracted_arrival_time = arrival_slice/F_SAMPLE
             residual_times.append(
