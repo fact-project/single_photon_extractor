@@ -10,6 +10,8 @@ import photon_stream as ps
 from photon_stream import plot as ps_plot
 from sklearn.neighbors import NearestNeighbors
 from matplotlib.patches import Circle
+import os
+from fact import plotting as fa_plot
 
 
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
@@ -87,21 +89,18 @@ def extract_photon_equivalent(time_series, half_max_position):
         time_series[half_max_position:half_max_position+integrationWindow])
 
 
-def classify_air_shower_using_main_pulses(
-    nsb_time_series,
-    air_shower_time_series,
-):
-    sum_time_series = nsb_time_series + air_shower_time_series
-
-    half_max_positions = np.zeros(sum_time_series.shape[0], dtype=np.int64)
+def classify_air_shower_using_main_pulses(all_pixel_time_series):
+    half_max_positions = np.zeros(
+        all_pixel_time_series.shape[0],
+        dtype=np.int64)
     for chid in range(NUM_PIXEL):
         half_max_positions[chid] = find_main_pulse(
-            sum_time_series[chid, :])['half_max_position']
+            all_pixel_time_series[chid, :])['half_max_position']
 
-    photon_equivalent = np.zeros(sum_time_series.shape[0])
+    photon_equivalent = np.zeros(all_pixel_time_series.shape[0])
     for chid in range(NUM_PIXEL):
         photon_equivalent[chid] = extract_photon_equivalent(
-            time_series=sum_time_series[chid, :],
+            time_series=all_pixel_time_series[chid, :],
             half_max_position=half_max_positions[chid])
     photon_equivalent /= PHOTON_EQUIVALENT_INTEGRAL
 
@@ -154,16 +153,11 @@ def classify_air_shower_using_main_pulses(
     }
 
 
-def classify_air_shower_using_density_clustering(
-    nsb_time_series,
-    air_shower_time_series,
-):
-    sum_time_series = nsb_time_series + air_shower_time_series
-
+def classify_air_shower_using_density_clustering(all_pixel_time_series):
     phs_lol = []
     for chid in range(NUM_PIXEL):
         extracted_arrival_slices = extraction(
-            sig_vs_t=sum_time_series[chid, 20:245],
+            sig_vs_t=all_pixel_time_series[chid, 20:245],
             puls_template=puls_template,
             subs_pulse_template=subs_pulse_template)
         extracted_arrival_slices += 20
@@ -219,7 +213,10 @@ nice_events = [
     7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
     68, 69, 72, 78, 82, 84, 85, 125, 130]
 
-for event in run:
+out_dir = 'air_shower_classification_demo'
+os.makedirs(out_dir, exist_ok=True)
+
+for ind, event in enumerate(run):
     clusters = ps.PhotonStreamCluster(event.photon_stream)
     """
     if (clusters.labels>=0).sum() > 50:
@@ -250,13 +247,13 @@ for event in run:
         electronic_white_noise=electronic_white_noise,
         roi=ROI)
 
+    sum_time_series = nsb_time_series + air_shower_time_series
+
     mp = classify_air_shower_using_main_pulses(
-        nsb_time_series=nsb_time_series,
-        air_shower_time_series=air_shower_time_series)
+        all_pixel_time_series=sum_time_series)
 
     reco_as_hist, reco_nsb_hist = classify_air_shower_using_density_clustering(
-        nsb_time_series=nsb_time_series,
-        air_shower_time_series=air_shower_time_series)
+        all_pixel_time_series=sum_time_series)
 
     mp_as = np.zeros(NUM_PIXEL)
     mp_as[mp['air_showr_mask']] = mp['photon_equivalent'][mp['air_showr_mask']]
@@ -268,20 +265,26 @@ for event in run:
         ps.representations.raw_phs_to_image_sequence(raw_air_showr),
         axis=0)
 
-    if dc_as.sum() > 25:
+    num_nsb_photons = raw_nsb.shape[0] - NUM_PIXEL
+    num_nsb_per_pixel = num_nsb_photons/NUM_PIXEL
+    nsb_rate_per_pixel = num_nsb_per_pixel/50e-9
+
+    if true_as.sum() > 25:
         print(
             event.observation_info.event,
+            'true_as', true_as.sum(),
             'dc_as', dc_as.sum(),
-            'mp_as', mp_as.sum())
+            'mp_as', mp_as.sum(),
+            'nsb rate MBq', nsb_rate_per_pixel/1e6)
         R = 195
         edgecolor = '#D0D0D0'
-        from fact import plotting as fa_plot
+
         # Three subplots, unpack the axes array immediately
         fig_w = 9
         fig_h = 3
         im_w = fig_w/3
         dpi = 180
-        fig = plt.figure(figsize=(fig_w, fig_h), dpi=dpi)
+        fig = plt.figure(figsize=(fig_w, fig_h+1), dpi=dpi)
 
         ax0 = fig.add_axes((0*im_w/fig_w,
                             0/fig_h,
@@ -305,9 +308,17 @@ for event in run:
         fa_plot.camera(true_as, cmap='Blues', edgecolor=edgecolor, ax=ax1)
         fa_plot.camera(mp_as, cmap='Blues', edgecolor=edgecolor, ax=ax2)
 
-        ax0.set_xlabel('DBSCAN')
-        ax1.set_xlabel('true')
-        ax2.set_xlabel('two stage')
+        fig.suptitle(
+            'Air-shower classification, NSB rate ' +
+            '{:.1f}MBq/pixel'.format(nsb_rate_per_pixel/1e6))
+        ax0.set_xlabel(
+            'Density based clustering\nin photon-stream\n' +
+            '{:d} photons'.format(dc_as.sum()))
+        ax1.set_xlabel(
+            'Truth\n{:d} photons'.format(true_as.sum()))
+        ax2.set_xlabel(
+            'Two-level-time-neighbor\non main-pulses\n' +
+            '{:.1f} photon equivalents'.format(mp_as.sum()))
 
         for side in ['bottom', 'right', 'top', 'left']:
             ax0.spines[side].set_visible(False)
@@ -329,4 +340,10 @@ for event in run:
         ax0.get_yaxis().set_ticks([])
         ax1.get_yaxis().set_ticks([])
         ax2.get_yaxis().set_ticks([])
-        plt.show()
+        plt.savefig(
+            os.path.join(
+                out_dir,
+                '{:06d}.png'.format(ind)),
+            dpi=256
+        )
+        plt.close('all')
