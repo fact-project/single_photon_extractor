@@ -7,6 +7,7 @@ from matplotlib.patches import Circle
 
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
 
+
 def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
     p = Circle((x, y), r, edgecolor=color, facecolor='none', lw=line_width)
     ax.add_patch(p)
@@ -36,7 +37,9 @@ def photon_stream_to_time_sereis(phs, electronic_white_noise=0.1, roi=300):
     number_pixel = len(phs)
     all_pixel_time_series = np.zeros(shape=(number_pixel, roi))
     for chid in range(len(phs)):
-        all_pixel_time_series[chid, :] = white_noise(N=roi, sigma=electronic_white_noise)
+        all_pixel_time_series[chid, :] = white_noise(
+            N=roi,
+            sigma=electronic_white_noise)
         for arrival_slice in phs[chid]:
             add_first_to_second_at(
                 f1=sipm_vs_t(
@@ -109,16 +112,17 @@ def classify_air_shower_using_main_pulses(
     photon_equivalent /= PHOTON_EQUIVALENT_INTEGRAL
 
     # Cleaning Settings
-    twoLevelTimeNeighbor_coreThreshold=5.5
-    twoLevelTimeNeighbor_neighborThreshold=3.0
-    #twoLevelTimeNeighbor_timeLimit=10
-    twoLevelTimeNeighbor_minNumberOfPixel=2
+    twoLevelTimeNeighbor_coreThreshold = 5.5
+    twoLevelTimeNeighbor_neighborThreshold = 3.0
+    # twoLevelTimeNeighbor_timeLimit = 10
+    twoLevelTimeNeighbor_minNumberOfPixel = 2
     """
-     *TwoLevelTimeMedian. Identifies showerPixel in the image array.
-     *   Cleaning in three Steps:
-     *  1) Identify all Core Pixel (Photoncharge higher than corePixelThreshold)
-     *  2) Remove all Single Core Pixel
-     *  3) Add all Neighbor Pixel, whose Photoncharge is higher than neighborPixelThreshold
+    TwoLevelTimeMedian. Identifies showerPixel in the image array.
+    Cleaning in three Steps:
+    1) Identify all Core Pixel (Photoncharge higher than corePixelThreshold)
+    2) Remove all Single Core Pixel
+    3) Add all Neighbor Pixel, whose Photoncharge is higher than
+       neighborPixelThreshold
     """
     chids = np.arange(1440)
 
@@ -196,16 +200,18 @@ def classify_air_shower_using_density_clustering(
     """
     reco_air_shower_hist = ps.representations.raw_phs_to_image_sequence(
         ps.representations.masked_raw_phs(
-            mask=reco_cluster.labels>=0, raw_phs=phs.raw)
+            mask=reco_cluster.labels >= 0, raw_phs=phs.raw)
     )
     reco_nsb_hist = ps.representations.raw_phs_to_image_sequence(
         ps.representations.masked_raw_phs(
-            mask=reco_cluster.labels==-1, raw_phs=phs.raw)
+            mask=reco_cluster.labels == -1, raw_phs=phs.raw)
     )
 
     return reco_air_shower_hist, reco_nsb_hist
 
-nice_events = [7, 12, 19, 20, 24, 34, 44, 47, 58, 61, 68, 69, 72, 78, 82, 84, 85, 125, 130]
+nice_events = [
+    7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
+    68, 69, 72, 78, 82, 84, 85, 125, 130]
 
 for event in run:
     clusters = ps.PhotonStreamCluster(event.photon_stream)
@@ -225,7 +231,8 @@ for event in run:
         raw_phs=event.photon_stream.raw)
 
     nsb = ps.representations.raw_phs_to_list_of_lists(raw_phs=raw_nsb)
-    air_showr = ps.representations.raw_phs_to_list_of_lists(raw_phs=raw_air_showr)
+    air_showr = ps.representations.raw_phs_to_list_of_lists(
+        raw_phs=raw_air_showr)
 
     nsb_time_series = photon_stream_to_time_sereis(
         phs=nsb,
@@ -236,7 +243,6 @@ for event in run:
         phs=air_showr,
         electronic_white_noise=electronic_white_noise,
         roi=ROI)
-
 
     mp = classify_air_shower_using_main_pulses(
         nsb_time_series=nsb_time_series,
@@ -249,7 +255,6 @@ for event in run:
     mp_as = np.zeros(NUM_PIXEL)
     mp_as[mp['air_showr_mask']] = mp['photon_equivalent'][mp['air_showr_mask']]
 
-
     dc_as = np.zeros(NUM_PIXEL)
     dc_as = np.sum(reco_as_hist, axis=0)
 
@@ -258,15 +263,18 @@ for event in run:
         axis=0)
 
     if dc_as.sum() > 25:
-        print(event.observation_info.event ,'dc_as', dc_as.sum(), 'mp_as', mp_as.sum())
+        print(
+            event.observation_info.event,
+            'dc_as', dc_as.sum(),
+            'mp_as', mp_as.sum())
         R = 195
         edgecolor = '#D0D0D0'
         from fact import plotting as fa_plot
         # Three subplots, unpack the axes array immediately
-        fig_w=9
-        fig_h=3
+        fig_w = 9
+        fig_h = 3
         im_w = fig_w/3
-        dpi=180
+        dpi = 180
         fig = plt.figure(figsize=(fig_w, fig_h), dpi=dpi)
 
         ax0 = fig.add_axes((0*im_w/fig_w,
@@ -295,7 +303,7 @@ for event in run:
         ax1.set_xlabel('true')
         ax2.set_xlabel('two stage')
 
-        for side in ['bottom','right','top','left']:
+        for side in ['bottom', 'right', 'top', 'left']:
             ax0.spines[side].set_visible(False)
             ax1.spines[side].set_visible(False)
             ax2.spines[side].set_visible(False)
