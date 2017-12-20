@@ -1,3 +1,10 @@
+"""
+Copyright Sebastrian A. Mueller, 2017
+
+Compare air-shower and night-sky-background photon classification of first
+density based clustering in the photon-stream, and second
+two-level-time-neighbor cleaning in the main-pulses.
+"""
 from sandbox import *
 import photon_stream as ps
 from photon_stream import plot as ps_plot
@@ -6,11 +13,6 @@ from matplotlib.patches import Circle
 
 
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
-
-
-def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
-    p = Circle((x, y), r, edgecolor=color, facecolor='none', lw=line_width)
-    ax.add_patch(p)
 
 
 def estimate_neighbor_pixels():
@@ -208,6 +210,10 @@ def classify_air_shower_using_density_clustering(
     )
 
     return reco_air_shower_hist, reco_nsb_hist
+
+def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
+    p = Circle((x, y), r, edgecolor=color, facecolor='none', lw=line_width)
+    ax.add_patch(p)
 
 nice_events = [
     7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
