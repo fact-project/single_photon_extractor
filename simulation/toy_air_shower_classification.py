@@ -87,14 +87,6 @@ def extract_photon_equivalent(time_series, half_max_position):
         time_series[half_max_position:half_max_position+integrationWindow])
 
 
-run = ps.EventListReader('20131103_167.phs.jsonl.gz')
-electronic_white_noise = 0.1
-
-ROI = 300
-f_sample = 2e9
-PHOTON_EQUIVALENT_INTEGRAL = 24.2
-
-
 def classify_air_shower_using_main_pulses(
     nsb_time_series,
     air_shower_time_series,
@@ -109,7 +101,7 @@ def classify_air_shower_using_main_pulses(
     photon_equivalent = np.zeros(sum_time_series.shape[0])
     for chid in range(NUM_PIXEL):
         photon_equivalent[chid] = extract_photon_equivalent(
-            time_series=air_shower_time_series[chid, :],
+            time_series=sum_time_series[chid, :],
             half_max_position=half_max_positions[chid])
     photon_equivalent /= PHOTON_EQUIVALENT_INTEGRAL
 
@@ -211,9 +203,17 @@ def classify_air_shower_using_density_clustering(
 
     return reco_air_shower_hist, reco_nsb_hist
 
+
 def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
     p = Circle((x, y), r, edgecolor=color, facecolor='none', lw=line_width)
     ax.add_patch(p)
+
+run = ps.EventListReader('20131103_167.phs.jsonl.gz')
+electronic_white_noise = 0.1
+
+ROI = 300
+f_sample = 2e9
+PHOTON_EQUIVALENT_INTEGRAL = 24.2
 
 nice_events = [
     7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
