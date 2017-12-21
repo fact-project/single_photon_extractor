@@ -12,7 +12,8 @@ from sklearn.neighbors import NearestNeighbors
 from matplotlib.patches import Circle
 import os
 from fact import plotting as fa_plot
-
+import matplotlib.pyplot as plt
+plt.rc('text', usetex=True)
 
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
 
@@ -107,7 +108,7 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
     # Cleaning Settings
     twoLevelTimeNeighbor_coreThreshold = 5.5
     twoLevelTimeNeighbor_neighborThreshold = 3.0
-    # twoLevelTimeNeighbor_timeLimit = 10
+    twoLevelTimeNeighbor_timeLimit = 10
     twoLevelTimeNeighbor_minNumberOfPixel = 2
     """
     TwoLevelTimeMedian. Identifies showerPixel in the image array.
@@ -147,8 +148,17 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
     for core_chid in chids[shower]:
         spread(core_chid, shower, photon_equivalent)
 
+    arrival_times = half_max_positions.copy()
+    median_arrival_time = np.median(arrival_times[shower])
+
+    arrival_time_is_close_to_median = (
+        (arrival_times - median_arrival_time) < twoLevelTimeNeighbor_timeLimit
+    )
+
+    shower2 = shower & arrival_time_is_close_to_median
+
     return {
-        'air_showr_mask': shower,
+        'air_showr_mask': shower2,
         'photon_equivalent': photon_equivalent
     }
 
@@ -257,13 +267,28 @@ for ind, event in enumerate(run):
 
     mp_as = np.zeros(NUM_PIXEL)
     mp_as[mp['air_showr_mask']] = mp['photon_equivalent'][mp['air_showr_mask']]
-
-    dc_as = np.zeros(NUM_PIXEL)
     dc_as = np.sum(reco_as_hist, axis=0)
-
     true_as = np.sum(
         ps.representations.raw_phs_to_image_sequence(raw_air_showr),
         axis=0)
+
+    dc_angle = np.arccos(
+        np.dot(dc_as, true_as) /
+        (
+            np.linalg.norm(dc_as) *
+            np.linalg.norm(true_as)
+        )
+    )
+    dc_dist = np.linalg.norm(dc_as - true_as)
+
+    mp_angle = np.arccos(
+        np.dot(mp_as, true_as) /
+        (
+            np.linalg.norm(mp_as) *
+            np.linalg.norm(true_as)
+        )
+    )
+    mp_dist = np.linalg.norm(mp_as - true_as)
 
     num_nsb_photons = raw_nsb.shape[0] - NUM_PIXEL
     num_nsb_per_pixel = num_nsb_photons/NUM_PIXEL
@@ -309,16 +334,26 @@ for ind, event in enumerate(run):
         fa_plot.camera(mp_as, cmap='Blues', edgecolor=edgecolor, ax=ax2)
 
         fig.suptitle(
-            'Air-shower classification, NSB rate ' +
-            '{:.1f}MBq/pixel'.format(nsb_rate_per_pixel/1e6))
+            'Air-shower classification, NSB ' +
+            '{:.1f}M photons/(pixel s)'.format(nsb_rate_per_pixel/1e6))
+
+        ax0.set_title('Density based clustering in photon-stream')
         ax0.set_xlabel(
-            'Density based clustering\nin photon-stream\n' +
-            '{:d} photons'.format(dc_as.sum()))
+            '{:d} photons\n'.format(dc_as.sum()) +
+            r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(dc_angle)) +
+            r'$D=${:.1f} photons'.format(dc_dist)
+        )
+
+        ax1.set_title('Truth')
         ax1.set_xlabel(
-            'Truth\n{:d} photons'.format(true_as.sum()))
+            '{:d} photons'.format(true_as.sum()))
+
+        ax2.set_title('Two-level-time-neighbor on main-pulses')
         ax2.set_xlabel(
-            'Two-level-time-neighbor\non main-pulses\n' +
-            '{:.1f} photon equivalents'.format(mp_as.sum()))
+            '{:.1f} photon equivalents\n'.format(mp_as.sum()) +
+            r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(mp_angle)) +
+            r'$D=${:.1f} p.e.'.format(mp_dist)
+        )
 
         for side in ['bottom', 'right', 'top', 'left']:
             ax0.spines[side].set_visible(False)
