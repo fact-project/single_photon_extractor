@@ -10,6 +10,7 @@ setup(
     license='GPLv3',
     packages=[
         'single_photon_extractor',
+        'single_photon_extractor.air_shower_classification',
     ],
     package_data={
         'single_photon_extractor': []
