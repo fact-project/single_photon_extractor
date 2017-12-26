@@ -5,7 +5,8 @@ Compare air-shower and night-sky-background photon classification of first
 density based clustering in the photon-stream, and second
 two-level-time-neighbor cleaning in the main-pulses.
 """
-from sandbox import *
+from .. import extractor
+import numpy as np
 import photon_stream as ps
 from photon_stream import plot as ps_plot
 from sklearn.neighbors import NearestNeighbors
