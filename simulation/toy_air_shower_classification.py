@@ -15,7 +15,27 @@ from fact import plotting as fa_plot
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True)
 
+np.random.seed(0)
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
+EXPOSURE_TIME = 50e-9
+ROI = 300
+F_SAMPLE = 2e9
+PHOTON_EQUIVALENT_INTEGRAL = 24.2
+IMAGE_SENSOR_RADIUS = 195
+
+
+def eucledian_angle_between(image1, image2):
+    return np.arccos(
+            np.dot(image1, image2) /
+            (
+                np.linalg.norm(image1) *
+                np.linalg.norm(image2)
+            )
+        )
+
+
+def eucledian_distance_between(image1, image2):
+    return np.linalg.norm(image1 - image2)
 
 
 def estimate_neighbor_pixels():
@@ -48,7 +68,7 @@ def photon_stream_to_time_sereis(phs, electronic_white_noise=0.1, roi=300):
         for arrival_slice in phs[chid]:
             add_first_to_second_at(
                 f1=sipm_vs_t(
-                    f_sample=f_sample,
+                    f_sample=F_SAMPLE,
                     N=ROI,
                     t_offset=0.0),
                 f2=all_pixel_time_series[chid, :],
@@ -121,8 +141,6 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
     chids = np.arange(1440)
 
     core = photon_equivalent > twoLevelTimeNeighbor_coreThreshold
-
-    print('core: ', core.sum())
     for core_chid in chids[core]:
         is_alone = True
         for neighbor_chid in neighbor_chids[core_chid]:
@@ -130,8 +148,6 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
                 is_alone = False
         if is_alone:
             core[core_chid] = False
-
-    print('core cluster: ', core.sum())
 
     shower = core.copy()
 
@@ -155,10 +171,10 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
         (arrival_times - median_arrival_time) < twoLevelTimeNeighbor_timeLimit
     )
 
-    shower2 = shower & arrival_time_is_close_to_median
+    shower_time = shower & arrival_time_is_close_to_median
 
     return {
-        'air_showr_mask': shower2,
+        'mask': shower_time,
         'photon_equivalent': photon_equivalent
     }
 
@@ -200,60 +216,39 @@ def classify_air_shower_using_density_clustering(all_pixel_time_series):
         ps.representations.masked_raw_phs(
             mask=reco_cluster.labels >= 0, raw_phs=phs.raw)
     )
-    reco_nsb_hist = ps.representations.raw_phs_to_image_sequence(
-        ps.representations.masked_raw_phs(
-            mask=reco_cluster.labels == -1, raw_phs=phs.raw)
-    )
 
-    return reco_air_shower_hist, reco_nsb_hist
+    return reco_air_shower_hist
 
 
 def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
     p = Circle((x, y), r, edgecolor=color, facecolor='none', lw=line_width)
     ax.add_patch(p)
 
-run = ps.EventListReader('20131103_167.phs.jsonl.gz')
-electronic_white_noise = 0.1
 
-ROI = 300
-f_sample = 2e9
-PHOTON_EQUIVALENT_INTEGRAL = 24.2
+# run = ps.EventListReader('20131103_167.phs.jsonl.gz')
+# electronic_white_noise = 0.1
+# nice_events = [
+#     7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
+#     68, 69, 72, 78, 82, 84, 85, 125, 130]
+# out_dir = 'air_shower_classification_demo'
+# os.makedirs(out_dir, exist_ok=True)
 
-nice_events = [
-    7, 12, 19, 20, 24, 34, 44, 47, 58, 61,
-    68, 69, 72, 78, 82, 84, 85, 125, 130]
 
-out_dir = 'air_shower_classification_demo'
-os.makedirs(out_dir, exist_ok=True)
-
-for ind, event in enumerate(run):
-    clusters = ps.PhotonStreamCluster(event.photon_stream)
-    """
-    if (clusters.labels>=0).sum() > 50:
-        ps_plot.event(event, mask=clusters.labels>=0)
-    else:
-        print('no cluster')
-    """
-
-    raw_nsb = ps.representations.masked_raw_phs(
-        mask=(clusters.labels == -1),
-        raw_phs=event.photon_stream.raw)
-
-    raw_air_showr = ps.representations.masked_raw_phs(
-        mask=(clusters.labels >= 0),
-        raw_phs=event.photon_stream.raw)
-
-    nsb = ps.representations.raw_phs_to_list_of_lists(raw_phs=raw_nsb)
-    air_showr = ps.representations.raw_phs_to_list_of_lists(
-        raw_phs=raw_air_showr)
-
+def benchmark_on_single_event(
+    event,
+    electronic_white_noise,
+    ROI=ROI,
+):
+    nsb_lol = ps.representations.raw_phs_to_list_of_lists(event['nsb'])
     nsb_time_series = photon_stream_to_time_sereis(
-        phs=nsb,
+        phs=nsb_lol,
         electronic_white_noise=electronic_white_noise,
         roi=ROI)
 
+    air_shower_lol = ps.representations.raw_phs_to_list_of_lists(
+        event['air_shower'])
     air_shower_time_series = photon_stream_to_time_sereis(
-        phs=air_showr,
+        phs=air_shower_lol,
         electronic_white_noise=electronic_white_noise,
         roi=ROI)
 
@@ -261,124 +256,213 @@ for ind, event in enumerate(run):
 
     mp = classify_air_shower_using_main_pulses(
         all_pixel_time_series=sum_time_series)
+    mp_air_shower = np.zeros(NUM_PIXEL)
+    mp_air_shower[mp['mask']] = mp['photon_equivalent'][mp['mask']]
 
-    reco_as_hist, reco_nsb_hist = classify_air_shower_using_density_clustering(
+    dc_air_shower_histogram = classify_air_shower_using_density_clustering(
         all_pixel_time_series=sum_time_series)
+    dc_air_shower = np.sum(dc_air_shower_histogram, axis=0)
 
-    mp_as = np.zeros(NUM_PIXEL)
-    mp_as[mp['air_showr_mask']] = mp['photon_equivalent'][mp['air_showr_mask']]
-    dc_as = np.sum(reco_as_hist, axis=0)
-    true_as = np.sum(
-        ps.representations.raw_phs_to_image_sequence(raw_air_showr),
-        axis=0)
-
-    dc_angle = np.arccos(
-        np.dot(dc_as, true_as) /
-        (
-            np.linalg.norm(dc_as) *
-            np.linalg.norm(true_as)
-        )
+    true_air_shower = np.sum(
+        ps.representations.raw_phs_to_image_sequence(event['air_shower']),
+        axis=0
     )
-    dc_dist = np.linalg.norm(dc_as - true_as)
 
-    mp_angle = np.arccos(
-        np.dot(mp_as, true_as) /
-        (
-            np.linalg.norm(mp_as) *
-            np.linalg.norm(true_as)
-        )
-    )
-    mp_dist = np.linalg.norm(mp_as - true_as)
+    event['image_true'] = true_air_shower
 
-    num_nsb_photons = raw_nsb.shape[0] - NUM_PIXEL
+    event['image_dc'] = dc_air_shower
+    event['delta_dc'] = eucledian_angle_between(dc_air_shower, true_air_shower)
+    event['dist_dc'] = eucledian_distance_between(
+        dc_air_shower, true_air_shower)
+
+    event['image_mp'] = mp_air_shower
+    event['delta_mp'] = eucledian_angle_between(mp_air_shower, true_air_shower)
+    event['dist_mp'] = eucledian_distance_between(
+        mp_air_shower, true_air_shower)
+
+    num_nsb_photons = event['nsb'].shape[0] - NUM_PIXEL
     num_nsb_per_pixel = num_nsb_photons/NUM_PIXEL
-    nsb_rate_per_pixel = num_nsb_per_pixel/50e-9
+    event['mean_nsb_rate'] = num_nsb_per_pixel/EXPOSURE_TIME
 
-    if true_as.sum() > 25:
-        print(
-            event.observation_info.event,
-            'true_as', true_as.sum(),
-            'dc_as', dc_as.sum(),
-            'mp_as', mp_as.sum(),
-            'nsb rate MBq', nsb_rate_per_pixel/1e6)
-        R = 195
-        edgecolor = '#D0D0D0'
+    return event
 
-        # Three subplots, unpack the axes array immediately
-        fig_w = 9
-        fig_h = 3
-        im_w = fig_w/3
-        dpi = 180
-        fig = plt.figure(figsize=(fig_w, fig_h+1), dpi=dpi)
 
-        ax0 = fig.add_axes((0*im_w/fig_w,
-                            0/fig_h,
-                            im_w/fig_w,
-                            fig_h/fig_h))
+def plot_event(
+    event,
+    path,
+    pixel_edgecolor='#D0D0D0',
+    cmap='Blues',
+    dpi=256
+):
+    e = event
+    print(
+        'true_as', e['image_true'].sum(),
+        'dc_as', e['image_dc'].sum(),
+        'mp_as', e['image_mp'].sum(),
+        'nsb rate MBq',  e['mean_nsb_rate']/1e6)
 
-        ax1 = fig.add_axes((1*im_w/fig_w,
-                            0/fig_h,
-                            im_w/fig_w,
-                            fig_h/fig_h))
+    fig_w = 9
+    fig_h = 3
+    im_w = fig_w/3
+    dpi = 180
+    fig = plt.figure(figsize=(fig_w, fig_h+1), dpi=dpi)
 
-        ax2 = fig.add_axes((2*im_w/fig_w,
-                            0/fig_h,
-                            im_w/fig_w,
-                            fig_h/fig_h))
+    ax0 = fig.add_axes((0*im_w/fig_w,
+                        0/fig_h,
+                        im_w/fig_w,
+                        fig_h/fig_h))
 
-        add_ring_2_ax(x=0, y=0, r=R, ax=ax0)
-        add_ring_2_ax(x=0, y=0, r=R, ax=ax1)
-        add_ring_2_ax(x=0, y=0, r=R, ax=ax2)
-        fa_plot.camera(dc_as, cmap='Blues', edgecolor=edgecolor, ax=ax0)
-        fa_plot.camera(true_as, cmap='Blues', edgecolor=edgecolor, ax=ax1)
-        fa_plot.camera(mp_as, cmap='Blues', edgecolor=edgecolor, ax=ax2)
+    ax1 = fig.add_axes((1*im_w/fig_w,
+                        0/fig_h,
+                        im_w/fig_w,
+                        fig_h/fig_h))
 
-        fig.suptitle(
-            'Air-shower classification, NSB ' +
-            '{:.1f}M photons/(pixel s)'.format(nsb_rate_per_pixel/1e6))
+    ax2 = fig.add_axes((2*im_w/fig_w,
+                        0/fig_h,
+                        im_w/fig_w,
+                        fig_h/fig_h))
 
-        ax0.set_title('Density based clustering in photon-stream')
-        ax0.set_xlabel(
-            '{:d} photons\n'.format(dc_as.sum()) +
-            r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(dc_angle)) +
-            r'$D=${:.1f} photons'.format(dc_dist)
-        )
+    add_ring_2_ax(x=0, y=0, r=IMAGE_SENSOR_RADIUS, ax=ax0)
+    add_ring_2_ax(x=0, y=0, r=IMAGE_SENSOR_RADIUS, ax=ax1)
+    add_ring_2_ax(x=0, y=0, r=IMAGE_SENSOR_RADIUS, ax=ax2)
+    fa_plot.camera(
+        e['image_dc'],
+        cmap=cmap,
+        edgecolor=pixel_edgecolor,
+        ax=ax0)
+    fa_plot.camera(
+        e['image_true'],
+        cmap=cmap,
+        edgecolor=pixel_edgecolor,
+        ax=ax1)
+    fa_plot.camera(e['image_mp'],
+        cmap=cmap,
+        edgecolor=pixel_edgecolor,
+        ax=ax2)
 
-        ax1.set_title('Truth')
-        ax1.set_xlabel(
-            '{:d} photons'.format(true_as.sum()))
+    fig.suptitle(
+        'Air-shower classification, NSB ' +
+        '{:.1f}M photons/(pixel s)'.format(e['mean_nsb_rate']/1e6))
 
-        ax2.set_title('Two-level-time-neighbor on main-pulses')
-        ax2.set_xlabel(
-            '{:.1f} photon equivalents\n'.format(mp_as.sum()) +
-            r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(mp_angle)) +
-            r'$D=${:.1f} p.e.'.format(mp_dist)
-        )
+    ax0.set_title('Density based clustering in photon-stream')
+    ax0.set_xlabel(
+        '{:d} photons\n'.format(e['image_dc'].sum()) +
+        r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_dc'])) +
+        r'$D=${:.1f} photons'.format(e['dist_dc'])
+    )
 
-        for side in ['bottom', 'right', 'top', 'left']:
-            ax0.spines[side].set_visible(False)
-            ax1.spines[side].set_visible(False)
-            ax2.spines[side].set_visible(False)
+    ax1.set_title('Truth')
+    ax1.set_xlabel(
+        '{:d} photons'.format(e['image_true'].sum()))
 
-        plt.setp(ax0.get_xticklabels(), visible=False)
-        plt.setp(ax1.get_xticklabels(), visible=False)
-        plt.setp(ax2.get_xticklabels(), visible=False)
+    ax2.set_title('Two-level-time-neighbor on main-pulses')
+    ax2.set_xlabel(
+        '{:.1f} photon equivalents\n'.format(e['image_mp'].sum()) +
+        r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_mp'])) +
+        r'$D=${:.1f} p.e.'.format(e['dist_mp'])
+    )
 
-        plt.setp(ax0.get_yticklabels(), visible=False)
-        plt.setp(ax1.get_yticklabels(), visible=False)
-        plt.setp(ax2.get_yticklabels(), visible=False)
+    for side in ['bottom', 'right', 'top', 'left']:
+        ax0.spines[side].set_visible(False)
+        ax1.spines[side].set_visible(False)
+        ax2.spines[side].set_visible(False)
 
-        ax0.get_xaxis().set_ticks([])
-        ax1.get_xaxis().set_ticks([])
-        ax2.get_xaxis().set_ticks([])
+    plt.setp(ax0.get_xticklabels(), visible=False)
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_xticklabels(), visible=False)
 
-        ax0.get_yaxis().set_ticks([])
-        ax1.get_yaxis().set_ticks([])
-        ax2.get_yaxis().set_ticks([])
-        plt.savefig(
-            os.path.join(
-                out_dir,
-                '{:06d}.png'.format(ind)),
-            dpi=256
-        )
-        plt.close('all')
+    plt.setp(ax0.get_yticklabels(), visible=False)
+    plt.setp(ax1.get_yticklabels(), visible=False)
+    plt.setp(ax2.get_yticklabels(), visible=False)
+
+    ax0.get_xaxis().set_ticks([])
+    ax1.get_xaxis().set_ticks([])
+    ax2.get_xaxis().set_ticks([])
+
+    ax0.get_yaxis().set_ticks([])
+    ax1.get_yaxis().set_ticks([])
+    ax2.get_yaxis().set_ticks([])
+    plt.savefig(path, dpi=dpi)
+    plt.close('all')
+
+
+def generate_nsb(nsb_rate_per_pixel):
+    phs = []
+    for chid in range(NUM_PIXEL):
+        arrival_times = poisson_arrival_times(EXPOSURE_TIME, nsb_rate_per_pixel)
+        arrival_slices = (
+            np.floor(arrival_times*F_SAMPLE) +
+            ps.io.magic_constants.NUMBER_OF_TIME_SLICES_OFFSET_AFTER_BEGIN_OF_ROI
+        ).astype(np.uint64)
+        phs.append(arrival_slices)
+    return phs
+
+
+import glob
+import os
+import json
+
+FACT_TRIGGER_THRESHOLD = 21
+
+def run_benchmark(
+    air_shower_dir,
+    nsb_rate=40e6,
+    electronic_white_noise=0.1
+):
+    paths = glob.glob(os.path.join(air_shower_dir, '*.phs'))
+    events = []
+
+    fout = open(os.path.join(air_shower_dir, 'benchmark.jsonl'), 'wt')
+
+    for path in paths:
+        run = ps.EventListReader(path)
+        for evt in run:
+            # if len(events) > 100:
+            #   break
+            if evt.photon_stream.number_photons >= FACT_TRIGGER_THRESHOLD:
+                event = {
+                    'run': evt.simulation_truth.run,
+                    'event': evt.simulation_truth.event,
+                    'reuse': evt.simulation_truth.reuse,
+                    'air_shower': evt.photon_stream.raw,
+                    'nsb': ps.representations.list_of_lists_to_raw_phs(
+                        generate_nsb(nsb_rate)
+                    )
+                }
+                print(event['run'], event['event'], event['reuse'])
+                event = benchmark_on_single_event(
+                    event=event,
+                    electronic_white_noise=electronic_white_noise)
+
+                fout.write(json.dumps(
+                    {
+                        'run': int(event['run']),
+                        'event': int(event['event']),
+                        'reuse': int(event['reuse']),
+                        'delta_dc': float(event['delta_dc']),
+                        'dist_dc': float(event['dist_dc']),
+                        'delta_mp': float(event['delta_mp']),
+                        'dist_mp': float(event['dist_mp']),
+                        'mean_nsb_rate': float(event['mean_nsb_rate']),
+                        'num_photons_true': int(event['image_true'].sum()),
+                        'num_photons_dc': int(event['image_dc'].sum()),
+                        'num_photons_mp': int(event['image_mp'].sum()),
+                    }
+                )+"\n")
+                events.append(event)
+
+
+    fout.close()
+    return events
+
+
+def read_in_jsonl(path):
+    l = []
+    with open(path, 'rt') as fin:
+        while fin:
+            line = fin.readline()
+            if len(line) > 1:
+                l.append(json.loads(line))
+            else:
+                break
+    return l
