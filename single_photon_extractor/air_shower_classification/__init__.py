@@ -1,1 +1,1 @@
-from . import air_hower_classification
+from . import air_shower_classification
