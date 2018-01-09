@@ -1,5 +1,5 @@
 """
-Usage: runFactSim -o=PATH [-n=NUMBER_RUNS] [-m=NUMBER]
+Usage: runCorsika -o=PATH [-n=NUMBER_RUNS] [-m=NUMBER]
 
 Options:
     -h --help                             Prints this help message.
