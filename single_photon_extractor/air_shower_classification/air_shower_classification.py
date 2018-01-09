@@ -16,7 +16,7 @@ from fact import plotting as fa_plot
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True)
 
-np.random.seed(0)
+# np.random.seed(0)
 NUM_PIXEL = ps.GEOMETRY.x_angle.shape[0]
 EXPOSURE_TIME = 50e-9
 ROI = 300
@@ -63,12 +63,12 @@ def photon_stream_to_time_sereis(phs, electronic_white_noise=0.1, roi=300):
     number_pixel = len(phs)
     all_pixel_time_series = np.zeros(shape=(number_pixel, roi))
     for chid in range(len(phs)):
-        all_pixel_time_series[chid, :] = white_noise(
+        all_pixel_time_series[chid, :] = extractor.white_noise(
             N=roi,
             sigma=electronic_white_noise)
         for arrival_slice in phs[chid]:
-            add_first_to_second_at(
-                f1=sipm_vs_t(
+            extractor.add_first_to_second_at(
+                f1=extractor.sipm_vs_t(
                     f_sample=F_SAMPLE,
                     N=ROI,
                     t_offset=0.0),
@@ -183,10 +183,10 @@ def classify_air_shower_using_main_pulses(all_pixel_time_series):
 def classify_air_shower_using_density_clustering(all_pixel_time_series):
     phs_lol = []
     for chid in range(NUM_PIXEL):
-        extracted_arrival_slices = extraction(
+        extracted_arrival_slices = extractor.extraction(
             sig_vs_t=all_pixel_time_series[chid, 20:245],
-            puls_template=puls_template,
-            subs_pulse_template=subs_pulse_template)
+            puls_template=extractor.puls_template,
+            subs_pulse_template=extractor.subs_pulse_template)
         extracted_arrival_slices += 20
         in_output_window = []
         for arr in extracted_arrival_slices:
@@ -237,7 +237,7 @@ def add_ring_2_ax(x, y, r, ax, color='k', line_width=1.0):
 
 def benchmark_on_single_event(
     event,
-    electronic_white_noise,
+    electronic_white_noise=0.1,
     ROI=ROI,
 ):
     nsb_lol = ps.representations.raw_phs_to_list_of_lists(event['nsb'])
@@ -390,7 +390,7 @@ def plot_event(
 def generate_nsb(nsb_rate_per_pixel):
     phs = []
     for chid in range(NUM_PIXEL):
-        arrival_times = poisson_arrival_times(EXPOSURE_TIME, nsb_rate_per_pixel)
+        arrival_times = extractor.poisson_arrival_times(EXPOSURE_TIME, nsb_rate_per_pixel)
         arrival_slices = (
             np.floor(arrival_times*F_SAMPLE) +
             ps.io.magic_constants.NUMBER_OF_TIME_SLICES_OFFSET_AFTER_BEGIN_OF_ROI
