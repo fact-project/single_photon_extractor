@@ -1,4 +1,4 @@
-from sandbox import *
+from single_photon_extractor.extractor import *
 import matplotlib.patches as patches
 
 plt.figure(figsize=(8, 3.43))
