@@ -1,4 +1,4 @@
-from sandbox import *
+from single_photon_extractor.extractor import *
 
 #-------------------------------------------------------------------------------
 class Bench(object):

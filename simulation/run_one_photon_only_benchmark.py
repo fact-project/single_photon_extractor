@@ -1,4 +1,4 @@
-from sandbox import *
+from single_photon_extractor.extractor import *
 import json
 
 np.random.seed = 0

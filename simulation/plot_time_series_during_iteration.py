@@ -1,4 +1,4 @@
-from sandbox import *
+from single_photon_extractor.extractor import *
 
 for seed in [2, 4, 5, 8, 13, 30, 33, 35, 46]:
 
