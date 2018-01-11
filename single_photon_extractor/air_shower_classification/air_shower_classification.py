@@ -342,7 +342,7 @@ def plot_event(
         ax=ax2)
 
     fig.suptitle(
-        'Air-shower classification, NSB ' +
+        'NSB ' +
         '{:.1f}M photons/(pixel s)'.format(e['mean_nsb_rate']/1e6))
 
     ax0.set_title('Density based clustering in photon-stream')
