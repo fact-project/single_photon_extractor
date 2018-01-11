@@ -306,20 +306,20 @@ def plot_event(
     fig_h = 3
     im_w = fig_w/3
     dpi = 180
-    fig = plt.figure(figsize=(fig_w, fig_h+1), dpi=dpi)
-
+    fig = plt.figure(figsize=(fig_w, fig_h+0.6), dpi=dpi)
+    ho = 0.25
     ax0 = fig.add_axes((0*im_w/fig_w,
-                        0/fig_h,
+                        (ho + 0)/fig_h,
                         im_w/fig_w,
                         fig_h/fig_h))
 
     ax1 = fig.add_axes((1*im_w/fig_w,
-                        0/fig_h,
+                        (ho + 0)/fig_h,
                         im_w/fig_w,
                         fig_h/fig_h))
 
     ax2 = fig.add_axes((2*im_w/fig_w,
-                        0/fig_h,
+                        (ho + 0)/fig_h,
                         im_w/fig_w,
                         fig_h/fig_h))
 
@@ -341,26 +341,29 @@ def plot_event(
         edgecolor=pixel_edgecolor,
         ax=ax2)
 
-    fig.suptitle(
-        'NSB ' +
-        '{:.1f}M photons/(pixel s)'.format(e['mean_nsb_rate']/1e6))
+    #fig.suptitle(
+    #    'NSB ' +
+    #    '{:.1f}M photons/(pixel s)'.format(e['mean_nsb_rate']/1e6))
 
-    ax0.set_title('density clustering\nin photon-stream')
+    #ax0.set_title('density-clustering\nin photon-stream', fontsize=16)
     ax0.set_xlabel(
         '{:d} photons\n'.format(e['image_dc'].sum()) +
         r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_dc'])) +
-        r'$D=${:.1f} photons'.format(e['dist_dc'])
+        r'$D=${:.1f} photons'.format(e['dist_dc']),
+        fontsize=16
     )
 
-    ax1.set_title('Truth')
+    #ax1.set_title('Truth', fontsize=16)
     ax1.set_xlabel(
-        '{:d} photons'.format(e['image_true'].sum()))
+        '{:d} photons'.format(e['image_true'].sum()),
+        fontsize=16)
 
-    ax2.set_title('two-level-time-neighbor\non main-pulses')
+    #ax2.set_title('two-level-time-neighbor\non main-pulses', fontsize=16)
     ax2.set_xlabel(
-        '{:.1f} photon equivalents\n'.format(e['image_mp'].sum()) +
+        '{:.1f} photon-equivalents\n'.format(e['image_mp'].sum()) +
         r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_mp'])) +
-        r'$D=${:.1f} p.e.'.format(e['dist_mp'])
+        r'$D=${:.1f} p.e.'.format(e['dist_mp']),
+        fontsize=16
     )
 
     for side in ['bottom', 'right', 'top', 'left']:
