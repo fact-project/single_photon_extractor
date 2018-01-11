@@ -345,7 +345,7 @@ def plot_event(
         'NSB ' +
         '{:.1f}M photons/(pixel s)'.format(e['mean_nsb_rate']/1e6))
 
-    ax0.set_title('Density based clustering in photon-stream')
+    ax0.set_title('density clustering\nin photon-stream')
     ax0.set_xlabel(
         '{:d} photons\n'.format(e['image_dc'].sum()) +
         r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_dc'])) +
@@ -356,7 +356,7 @@ def plot_event(
     ax1.set_xlabel(
         '{:d} photons'.format(e['image_true'].sum()))
 
-    ax2.set_title('Two-level-time-neighbor on main-pulses')
+    ax2.set_title('two-level-time-neighbor\non main-pulses')
     ax2.set_xlabel(
         '{:.1f} photon equivalents\n'.format(e['image_mp'].sum()) +
         r'$\delta=${:.1f}$^\circ$, '.format(np.rad2deg(e['delta_mp'])) +
