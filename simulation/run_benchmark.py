@@ -1,4 +1,7 @@
 from single_photon_extractor.extractor import *
+import json
+import os
+from tqdm import tqdm
 
 #-------------------------------------------------------------------------------
 class Bench(object):
@@ -128,6 +131,18 @@ for s, windowRadius in enumerate(windowRadii):
 
 
 plt.figure(figsize=(8,2*3.43))
+
+if os.path.exists('./one_benchmark_true_positive_rate.json'):
+    with open('./one_benchmark_true_positive_rate.json', 'rt') as fin:
+        single_photon_true_positive_rate = json.loads(fin.read())
+
+    plt.plot(
+        np.array(single_photon_true_positive_rate['time_coincidence_radius'])*1e9,
+        single_photon_true_positive_rate['rate'],
+        color='C1',
+        label='isolated single-photon'
+    )
+
 plt.errorbar(
     windowRadii/2,
     truePositiveRate,
@@ -135,25 +150,20 @@ plt.errorbar(
     yerr=delta_truePositiveRate,
     fmt=',',
     color='C0',
-    label='True positive rate'
+    label='multiple night-sky-background-photons'
 )
-plt.errorbar(
-    windowRadii/2,
-    falseNegativeRate,
-    xerr=0.25,
-    yerr=delta_falseNegativeRate,
-    fmt=',',
-    color='C1',
-    label='False negative rate'
-)
+
 plt.ylabel('rate/1')
-plt.xlabel('time coincidence radius/ns')
+plt.xlabel('coincidence-time-radius/ns')
 plt.legend(
     bbox_to_anchor=(0., 1.02, 1., .102),
     loc=3,
     ncol=2,
     mode="expand", borderaxespad=0.
 )
+
+plt.xticks(np.linspace(0, 5, 11))
+
 plt.savefig(
     'benchmark.png',
     dpi=256,
